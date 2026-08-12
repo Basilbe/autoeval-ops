@@ -2,6 +2,7 @@ AutoEvalOps Development Guidelines
 Golden Rule
 
 Do not move to next phase until current phase is 100% complete and tested.
+I'm using powerhsell terminal, so all commands must be given that can be pasted to powershell.
 
 Phase Completion Gate (Must Pass All)
  Code compiles/runs without errors
@@ -16,11 +17,11 @@ Bug Containment
 If Phase N breaks Phase N-1, stop immediately. Fix Phase N-1 first, re-test, then resume.
 
 Module Isolation
-Phase 1 → /backend/core/
-Phase 2 → /backend/github/
-Phase 3 → /backend/api/
+Phase 1 → /backend/src/autoeval_ops/core/
+Phase 2 → /backend/src/autoeval_ops/github/
+Phase 3 → /backend/src/autoeval_ops/api/
 Phase 4 → /dashboard/
-Phase 5 → /backend/observability/
+Phase 5 → /backend/src/autoeval_ops/observability/
 
 No cross-phase dependencies except via interfaces.
 

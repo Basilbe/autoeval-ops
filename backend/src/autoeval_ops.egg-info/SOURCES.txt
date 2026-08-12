@@ -1,0 +1,9 @@
+pyproject.toml
+src/autoeval_ops/__init__.py
+src/autoeval_ops/config.py
+src/autoeval_ops.egg-info/PKG-INFO
+src/autoeval_ops.egg-info/SOURCES.txt
+src/autoeval_ops.egg-info/dependency_links.txt
+src/autoeval_ops.egg-info/top_level.txt
+src/autoeval_ops/core/__init__.py
+src/autoeval_ops/core/evaluators/__init__.py

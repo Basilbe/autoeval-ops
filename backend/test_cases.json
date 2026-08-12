@@ -1,0 +1,14 @@
+[
+  {
+    "output": "The capital of France is Paris.",
+    "expected": "Paris",
+    "context": "Paris is the capital and most populous city of France.",
+    "latency_ms": 180
+  },
+  {
+    "output": "I think the moon is made of cheese, probably imported from the stars.",
+    "expected": "The moon is composed of rock",
+    "context": "The Moon is Earth's only natural satellite, composed primarily of rock.",
+    "latency_ms": 900
+  }
+]
