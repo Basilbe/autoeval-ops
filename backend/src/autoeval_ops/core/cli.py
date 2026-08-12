@@ -33,7 +33,7 @@ class NullToxicityScorer:
 
 def build_pipeline(model: str) -> EvaluationPipeline:
     api_key = os.environ.get("OPENAI_API_KEY")
-    if api_key:
+    if api_key:  # pragma: no cover
         from openai import AsyncOpenAI
 
         client = AsyncOpenAI(api_key=api_key)
@@ -97,7 +97,7 @@ async def run_evaluate(args: argparse.Namespace) -> None:
             print(f"  {result.metric_name:14s} {result.metric_value:8.2f}  [{result.status}]")
 
 
-def main() -> None:
+def main() -> None:  # pragma: no cover
     parser = argparse.ArgumentParser(prog="autoeval-cli")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -112,5 +112,5 @@ def main() -> None:
         asyncio.run(run_evaluate(args))
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()

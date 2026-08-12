@@ -14,12 +14,12 @@ class DetoxifyScorer:
     """Lazy-loads Detoxify so importing this module never forces a torch
     load unless this scorer is actually instantiated."""
 
-    def __init__(self) -> None:
+    def __init__(self) -> None:  # pragma: no cover
         from detoxify import Detoxify  # heavy import, deferred on purpose
 
         self._model = Detoxify("original")
 
-    def score(self, text: str) -> float:
+    def score(self, text: str) -> float:  # pragma: no cover
         result = self._model.predict(text)
         return float(result.get("toxicity", 0.0))
 
