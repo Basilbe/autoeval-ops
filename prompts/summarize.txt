@@ -1,1 +1,1 @@
-Summarize the following text in one sentence: {in a clear sentence }
+Summarize the following text in one sentence: {in a clear one part sentence}
