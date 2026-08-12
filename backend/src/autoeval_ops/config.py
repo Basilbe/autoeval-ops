@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # config.py lives at backend/src/autoeval_ops/config.py — four levels below
 # the repo root. Resolve .env from an absolute path so it loads correctly
@@ -30,9 +30,10 @@ class Settings(BaseSettings):
     github_app_private_key_path: str = ""
     github_webhook_secret: str = ""
 
-    class Config:
-        env_file = str(_REPO_ROOT / ".env")
-        extra = "ignore"
+    model_config = SettingsConfigDict(
+        env_file=str(_REPO_ROOT / ".env"),
+        extra="ignore",
+    )
 
 
 settings = Settings()
