@@ -72,3 +72,12 @@ See `Roadmap.md` for the full task breakdown. Summary:
 - Deploy to a staging environment and validate with a real test-repo PR
 
 Per `CLAUDE.md`'s golden rule: do not begin Phase 2 until this status doc is reviewed and Phase 1 is reconfirmed complete in that session.
+
+## Phase 2 Planning Notes (decided before starting)
+- Task queue: asyncio-based (asyncio.Queue), not Celery — Redis remains
+  unused until a later phase adopts Celery for production.
+- Database persistence deferred to Phase 3: Phase 2 runs evaluators
+  in-memory via Phase 1's EvaluationPipeline and posts directly to the PR
+  comment. Phase 3's ORM models will retrofit persistence into this task.
+- New environment dependency: a tunnel tool (e.g. ngrok) will be needed to
+  let GitHub's webhook reach localhost during local testing.

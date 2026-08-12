@@ -9,3 +9,4 @@ backend/.coverage
 backend/*.egg-info/
 backend/__pycache__/
 backend/**/__pycache__/
+backend/secrets/

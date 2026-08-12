@@ -1,0 +1,12 @@
+[
+  {
+    "input": "The quick brown fox jumps over the lazy dog. This sentence contains every letter of the English alphabet at least once, making it a useful tool for testing typewriters, fonts, and keyboards.",
+    "expected": "A pangram sentence used for testing typography, containing every letter of the alphabet.",
+    "context": "The quick brown fox jumps over the lazy dog is a well-known pangram used to test fonts and keyboards."
+  },
+  {
+    "input": "Paris is the capital and most populous city of France, known for landmarks like the Eiffel Tower and the Louvre Museum.",
+    "expected": "Paris is France's capital, famous for the Eiffel Tower and the Louvre.",
+    "context": "Paris is the capital and most populous city of France, known for landmarks like the Eiffel Tower and the Louvre Museum."
+  }
+]

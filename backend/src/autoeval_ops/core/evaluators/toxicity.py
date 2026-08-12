@@ -39,3 +39,10 @@ class ToxicityEvaluator(Evaluator):
         pct = raw_score * 100
         status = "fail" if raw_score >= self.fail_threshold else "pass"
         return EvaluationResult(self.name, pct, status, {"raw_score": raw_score})
+
+class NullToxicityScorer:
+    """No-op scorer used when Detoxify is unavailable (it was dropped from
+    requirements.txt in Phase 1 — see PHASE_0_STATUS.md)."""
+
+    def score(self, text: str) -> float:
+        return 0.0

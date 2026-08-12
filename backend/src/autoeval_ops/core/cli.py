@@ -6,51 +6,20 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
-import os
 import sys
 from pathlib import Path
 
 from autoeval_ops.core.pipeline import EvaluationPipeline
 from autoeval_ops.core.evaluators.correctness import CorrectnessEvaluator
-from autoeval_ops.core.evaluators.toxicity import ToxicityEvaluator
+from autoeval_ops.core.evaluators.toxicity import ToxicityEvaluator, NullToxicityScorer
 from autoeval_ops.core.evaluators.hallucination import HallucinationEvaluator
 from autoeval_ops.core.evaluators.cost import CostEvaluator
 from autoeval_ops.core.evaluators.latency import LatencyEvaluator
-
-
-class EchoLLMClient:
-    """Fallback used when no OPENAI_API_KEY is set, so the CLI still runs
-    end-to-end for local demos without hitting a real API."""
-
-    async def complete(self, prompt: str) -> str:
-        return "50"
-
-
-class NullToxicityScorer:
-    def score(self, text: str) -> float:
-        return 0.0
+from autoeval_ops.core.llm_client import build_llm_client, EchoLLMClient  # noqa: F401 (re-exported for tests)
 
 
 def build_pipeline(model: str) -> EvaluationPipeline:
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if api_key:  # pragma: no cover
-        from openai import AsyncOpenAI
-
-        client = AsyncOpenAI(api_key=api_key)
-
-        class OpenAILLMClient:
-            async def complete(self, prompt: str) -> str:
-                resp = await client.chat.completions.create(
-                    model=model,
-                    messages=[{"role": "user", "content": prompt}],
-                    max_tokens=10,
-                )
-                return resp.choices[0].message.content or "0"
-
-        llm_client = OpenAILLMClient()
-    else:
-        print("WARNING: OPENAI_API_KEY not set - using placeholder LLM client.", file=sys.stderr)
-        llm_client = EchoLLMClient()
+    llm_client = build_llm_client(model)
 
     try:
         from autoeval_ops.core.evaluators.toxicity import DetoxifyScorer
@@ -97,7 +66,7 @@ async def run_evaluate(args: argparse.Namespace) -> None:
             print(f"  {result.metric_name:14s} {result.metric_value:8.2f}  [{result.status}]")
 
 
-def main() -> None:  # pragma: no cover
+def main() -> None:  # pragma: no cover - entrypoint, verified manually
     parser = argparse.ArgumentParser(prog="autoeval-cli")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
