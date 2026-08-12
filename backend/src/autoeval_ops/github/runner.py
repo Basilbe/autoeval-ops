@@ -16,7 +16,7 @@ class PromptRunner:
     async def run(self, prompt_template: str, test_cases: list[dict]) -> list[dict]:
         prepared = []
         for case in test_cases:
-            rendered = prompt_template.format(text=case.get("input", ""))
+            rendered = prompt_template.replace("{text}", case.get("input", ""))
             start = time.perf_counter()
             output = await self.llm_client.complete(rendered)
             latency_ms = (time.perf_counter() - start) * 1000

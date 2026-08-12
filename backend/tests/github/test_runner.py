@@ -43,3 +43,11 @@ async def test_runner_handles_empty_test_case_list():
     runner = PromptRunner(client)
     results = await runner.run("{text}", [])
     assert results == []
+
+async def test_runner_tolerates_literal_braces_in_template():
+    client = FakeLLMClient()
+    runner = PromptRunner(client)
+    template = 'Summarize {text} and return as {"summary": "..."}'
+    results = await runner.run(template, [{"input": "hello"}])
+    assert "hello" in results[0]["prompt"]
+    assert '{"summary": "..."}' in results[0]["prompt"]
