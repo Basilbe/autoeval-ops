@@ -1,3 +1,10 @@
+-- HISTORICAL ARTIFACT (Phase 0). Do not run this directly.
+-- As of Phase 3, all schema changes go through Alembic migrations:
+--   alembic revision -m "description"   (write it by hand, or use --autogenerate
+--   as a starting point and review carefully)
+--   alembic upgrade head
+-- This file records what Phase 0 originally created.
+
 -- Users table
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

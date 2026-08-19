@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     github_app_private_key_path: str = ""
     github_webhook_secret: str = ""
 
+    # Clerk (Phase 3; live verification deferred to Phase 4)
+    clerk_secret_key: str = ""
+    clerk_jwks_url: str = ""
+
     model_config = SettingsConfigDict(
         env_file=str(_REPO_ROOT / ".env"),
         extra="ignore",
