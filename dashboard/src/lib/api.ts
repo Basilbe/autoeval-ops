@@ -39,7 +39,6 @@ class ApiError extends Error {
 }
 
 async function request<T>(path: string, token: string): Promise<T> {
-  console.log("DEBUG token:", token ? `${token.slice(0, 20)}... (length ${token.length})` : "EMPTY/UNDEFINED");
   const res = await fetch(`${API_URL}${path}`, {
     headers: { Authorization: `Bearer ${token}` },
     cache: "no-store",
