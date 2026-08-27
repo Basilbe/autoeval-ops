@@ -4,6 +4,14 @@
 from __future__ import annotations
 from contextlib import asynccontextmanager
 
+import truststore
+
+# Local HTTPS-scanning antivirus/proxies (e.g. Avast/AVG Web Shield) inject
+# their own root cert into the Windows trust store but not into certifi's
+# bundled list, so outbound httpx calls (Clerk JWKS fetch, GitHub API, etc.)
+# fail cert verification unless ssl reads the OS store instead.
+truststore.inject_into_ssl()
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler

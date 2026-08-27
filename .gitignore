@@ -10,3 +10,6 @@ backend/*.egg-info/
 backend/__pycache__/
 backend/**/__pycache__/
 backend/secrets/
+dashboard/node_modules/
+dashboard/.next/
+dashboard/.env.local

@@ -37,7 +37,7 @@ def normalize_repo(github_repo_url: str) -> str:
 
 # --- Users ---
 
-async def create_user(db: AsyncSession, email: str, api_key_hash: str) -> User:
+async def create_user(db: AsyncSession, email: str, api_key_hash: str | None = None) -> User:
     user = User(email=email, api_key_hash=api_key_hash)
     db.add(user)
     await db.flush()
@@ -47,6 +47,16 @@ async def create_user(db: AsyncSession, email: str, api_key_hash: str) -> User:
 async def get_user_by_email(db: AsyncSession, email: str) -> User | None:
     result = await db.execute(select(User).where(User.email == email))
     return result.scalar_one_or_none()
+
+
+async def get_or_create_user_by_email(db: AsyncSession, email: str) -> User:
+    """Look up a user by email, provisioning one with no API key if none
+    exists yet. Used for Clerk-authenticated logins, which never go through
+    the manual POST /api/v1/users registration flow."""
+    user = await get_user_by_email(db, email)
+    if user is not None:
+        return user
+    return await create_user(db, email=email)
 
 
 async def list_users_with_api_keys(db: AsyncSession) -> list[User]:

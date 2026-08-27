@@ -2,9 +2,13 @@
 
 Accepts either an API key (X-API-Key header) or a Clerk session token
 (Authorization: Bearer ...). API keys are the machine-to-machine path;
-Clerk is what the Phase 4 dashboard will use.
+Clerk is what the Phase 4 dashboard uses. A verified Clerk login is
+provisioned into the users table on first sight - see
+repository.get_or_create_user_by_email.
 """
 from __future__ import annotations
+
+import logging
 
 from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -14,6 +18,8 @@ from autoeval_ops.config import settings
 from autoeval_ops.db import repository
 from autoeval_ops.db.models import User
 from autoeval_ops.db.session import get_db
+
+logger = logging.getLogger(__name__)
 
 _CREDENTIALS_ERROR = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
@@ -41,11 +47,12 @@ async def _user_from_clerk_token(db: AsyncSession, token: str) -> User | None:
     try:
         claims = await verifier.verify(token)
     except Exception:
+        logger.exception("Clerk JWT verification failed")
         return None
     email = claims.get("email")
     if not email:
         return None
-    return await repository.get_user_by_email(db, email)
+    return await repository.get_or_create_user_by_email(db, email)
 
 
 async def get_current_user(

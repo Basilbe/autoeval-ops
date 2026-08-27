@@ -1,29 +1,8 @@
-"""Integration-test fixtures. Each test runs inside a transaction that is
-rolled back afterwards, so tests never leave rows behind and can run in any
-order against the same database."""
+"""Integration-test fixtures built on top of the db_session fixture in the
+root tests/conftest.py (kept there, not here, so tests/api/ can use it too)."""
 from __future__ import annotations
 
-import pytest
 import pytest_asyncio
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-
-from autoeval_ops.config import settings
-
-
-@pytest_asyncio.fixture(scope="function")
-async def db_session():
-    engine = create_async_engine(settings.database_url, poolclass=None)
-    connection = await engine.connect()
-    transaction = await connection.begin()
-    factory = async_sessionmaker(bind=connection, class_=AsyncSession, expire_on_commit=False)
-    session = factory()
-    try:
-        yield session
-    finally:
-        await session.close()
-        await transaction.rollback()
-        await connection.close()
-        await engine.dispose()
 
 
 @pytest_asyncio.fixture

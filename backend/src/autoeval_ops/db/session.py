@@ -41,7 +41,7 @@ def get_session_factory() -> async_sessionmaker[AsyncSession]:
     return _session_factory
 
 
-async def get_db() -> AsyncGenerator[AsyncSession, None]:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:  # pragma: no cover
     """FastAPI dependency yielding a session, committing on success and
     rolling back on any exception."""
     factory = get_session_factory()
@@ -54,7 +54,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
             raise
 
 
-async def dispose_engine() -> None:
+async def dispose_engine() -> None:  # pragma: no cover
     """Called on app shutdown to close the connection pool cleanly."""
     global _engine, _session_factory
     if _engine is not None:

@@ -12,3 +12,4 @@ where = ["src"]
 
 [tool.coverage.run]
 omit = ["*/config.py"]
+concurrency = ["thread", "greenlet"]
