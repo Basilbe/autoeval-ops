@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from autoeval_ops.core.evaluator import Evaluator, EvaluationResult
+from autoeval_ops.observability.telemetry import get_tracer
 
 
 @dataclass
@@ -39,9 +40,22 @@ class EvaluationPipeline:
         self.evaluators = evaluators
 
     async def evaluate_case(self, output: str, **kwargs: Any) -> EvaluationReport:
-        tasks = [ev.evaluate(output, **kwargs) for ev in self.evaluators]
-        results = await asyncio.gather(*tasks)
-        return EvaluationReport(results=list(results))
+        tracer = get_tracer(__name__)
+        with tracer.start_as_current_span("evaluate_case") as span:
+            span.set_attribute("evaluator.count", len(self.evaluators))
+
+            async def _run_traced(evaluator: Evaluator):
+                with tracer.start_as_current_span(f"evaluator.{evaluator.name}") as ev_span:
+                    result = await evaluator.evaluate(output, **kwargs)
+                    ev_span.set_attribute("metric.name", result.metric_name)
+                    ev_span.set_attribute("metric.value", result.metric_value)
+                    ev_span.set_attribute("metric.status", result.status)
+                    return result
+
+            results = await asyncio.gather(*[_run_traced(ev) for ev in self.evaluators])
+            report = EvaluationReport(results=list(results))
+            span.set_attribute("overall.status", report.overall_status)
+            return report
 
     async def evaluate_batch(
         self, cases: list[dict[str, Any]], max_concurrency: int = 10

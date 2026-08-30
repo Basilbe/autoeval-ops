@@ -3,7 +3,6 @@
 """
 from __future__ import annotations
 from contextlib import asynccontextmanager
-
 import truststore
 
 # Local HTTPS-scanning antivirus/proxies (e.g. Avast/AVG Web Shield) inject
@@ -11,6 +10,10 @@ import truststore
 # bundled list, so outbound httpx calls (Clerk JWKS fetch, GitHub API, etc.)
 # fail cert verification unless ssl reads the OS store instead.
 truststore.inject_into_ssl()
+
+from autoeval_ops.observability.telemetry import configure_tracing, instrument_app
+
+configure_tracing()
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,6 +29,7 @@ from autoeval_ops.api.routes.users import router as users_router
 from autoeval_ops.api.routes.organizations import router as organizations_router
 from autoeval_ops.api.routes.projects import router as projects_router
 from autoeval_ops.api.routes.evaluations import router as evaluations_router
+from autoeval_ops.api.routes.status import router as status_router
 from autoeval_ops.db.session import dispose_engine
 from autoeval_ops.config import settings, resolve_repo_path
 
@@ -62,6 +66,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+instrument_app(app)
+
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
@@ -84,3 +90,4 @@ app.include_router(users_router)
 app.include_router(organizations_router)
 app.include_router(projects_router)
 app.include_router(evaluations_router)
+app.include_router(status_router)

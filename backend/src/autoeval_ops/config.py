@@ -39,5 +39,9 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    # Observability (Phase 5)
+    otel_enabled: bool = True
+    otel_exporter_endpoint: str = "http://localhost:4318"
+
 
 settings = Settings()

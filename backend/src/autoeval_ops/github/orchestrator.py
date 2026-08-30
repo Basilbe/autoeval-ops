@@ -25,6 +25,7 @@ from autoeval_ops.core.evaluators.cost import CostEvaluator
 from autoeval_ops.core.evaluators.latency import LatencyEvaluator
 from autoeval_ops.db import repository
 from autoeval_ops.db.session import get_session_factory
+from autoeval_ops.observability.telemetry import get_tracer
 
 PROMPT_DIR_PREFIX = "prompts/"
 PROMPT_SUFFIX = ".txt"
@@ -98,65 +99,85 @@ async def handle_eval_job(
     client_factory=GitHubClient,
     session_factory=None,
 ) -> None:
-    token = await app_auth.get_installation_token(job.installation_id)
-    gh = client_factory(token)
+    tracer = get_tracer(__name__)
+    with tracer.start_as_current_span("handle_eval_job") as span:
+        span.set_attribute("github.owner", job.owner)
+        span.set_attribute("github.repo", job.repo)
+        span.set_attribute("github.pr_number", job.pr_number)
+        span.set_attribute("github.commit", job.head_sha)
 
-    files = await gh.get_pr_files(job.owner, job.repo, job.pr_number)
-    prompt_files = [f["filename"] for f in files if is_prompt_file(f["filename"])]
-    if not prompt_files:
-        return
+        token = await app_auth.get_installation_token(job.installation_id)
+        gh = client_factory(token)
 
-    llm_client = build_llm_client(model)
-    runner = PromptRunner(llm_client)
+        files = await gh.get_pr_files(job.owner, job.repo, job.pr_number)
+        prompt_files = [f["filename"] for f in files if is_prompt_file(f["filename"])]
+        if not prompt_files:
+            return
 
-    if session_factory is None:
-        session_factory = get_session_factory()
+        llm_client = build_llm_client(model)
+        runner = PromptRunner(llm_client)
 
-    for prompt_path in prompt_files:
-        prompt_text = await gh.get_file_content(job.owner, job.repo, prompt_path, job.head_sha)
+        if session_factory is None:
+            session_factory = get_session_factory()
 
-        tc_path = resolve_test_cases_path(prompt_path)
-        try:
-            test_cases_raw = await gh.get_file_content(job.owner, job.repo, tc_path, job.head_sha)
-        except Exception:
-            continue  # no matching test suite for this prompt, skip
+        for prompt_path in prompt_files:
+            prompt_text = await gh.get_file_content(job.owner, job.repo, prompt_path, job.head_sha)
 
-        test_cases = json.loads(test_cases_raw)
-        prepared_cases = await runner.run(prompt_text, test_cases)
+            tc_path = resolve_test_cases_path(prompt_path)
+            try:
+                test_cases_raw = await gh.get_file_content(job.owner, job.repo, tc_path, job.head_sha)
+            except Exception:
+                continue  # no matching test suite for this prompt, skip
 
-        pipeline = build_default_pipeline(model, llm_client)
-        reports = await pipeline.evaluate_batch([dict(c) for c in prepared_cases])
+            test_cases = json.loads(test_cases_raw)
+            prepared_cases = await runner.run(prompt_text, test_cases)
 
-        # Persist - best effort, never blocks the PR comment below.
-        try:
-            async with session_factory() as db:
-                project = await repository.get_project_by_repo(db, job.owner, job.repo)
-                if project is None:
-                    print(
-                        f"AutoEvalOps: repo {job.owner}/{job.repo} is not a registered "
-                        f"project - evaluation not persisted. Register it via "
-                        f"POST /api/v1/projects to enable history."
-                    )
-                else:
-                    evaluation = await repository.create_evaluation(
-                        db,
-                        project_id=project.id,
-                        commit_hash=job.head_sha,
-                        prompt_version=prompt_path,
-                        model_name=model,
-                        test_cases_count=len(test_cases),
-                    )
-                    overall, results_json, metric_rows = aggregate_reports(reports)
-                    await repository.complete_evaluation(
-                        db,
-                        evaluation,
-                        status=overall,
-                        results_json=results_json,
-                        metric_rows=metric_rows,
-                    )
-                    await db.commit()
-        except Exception as exc:
-            print(f"AutoEvalOps: failed to persist evaluation - {exc}")
+            pipeline = build_default_pipeline(model, llm_client)
+            reports = await pipeline.evaluate_batch([dict(c) for c in prepared_cases])
 
-        comment_body = format_comment(prompt_path, reports)
-        await gh.post_pr_comment(job.owner, job.repo, job.pr_number, comment_body)
+            # Persist - best effort, never blocks the PR comment below.
+            try:
+                async with session_factory() as db:
+                    project = await repository.get_project_by_repo(db, job.owner, job.repo)
+                    if project is None:
+                        print(
+                            f"AutoEvalOps: repo {job.owner}/{job.repo} is not a registered "
+                            f"project - evaluation not persisted. Register it via "
+                            f"POST /api/v1/projects to enable history."
+                        )
+                    else:
+                        evaluation = await repository.create_evaluation(
+                            db,
+                            project_id=project.id,
+                            commit_hash=job.head_sha,
+                            prompt_version=prompt_path,
+                            model_name=model,
+                            test_cases_count=len(test_cases),
+                        )
+                        overall, results_json, metric_rows = aggregate_reports(reports)
+                        await repository.complete_evaluation(
+                            db,
+                            evaluation,
+                            status=overall,
+                            results_json=results_json,
+                            metric_rows=metric_rows,
+                        )
+                        metrics_by_name = {r["metric_name"]: r["metric_value"] for r in metric_rows}
+                        await repository.create_trace(
+                            db,
+                            eval_id=evaluation.id,
+                            trace_data={
+                                "prompt_version": prompt_path,
+                                "model": model,
+                                "case_count": len(test_cases),
+                                "overall_status": overall,
+                            },
+                            latency_ms=int(metrics_by_name.get("latency", 0.0)),
+                            cost_usd=float(metrics_by_name.get("cost", 0.0)),
+                        )
+                        await db.commit()
+            except Exception as exc:
+                print(f"AutoEvalOps: failed to persist evaluation - {exc}")
+
+            comment_body = format_comment(prompt_path, reports)
+            await gh.post_pr_comment(job.owner, job.repo, job.pr_number, comment_body)

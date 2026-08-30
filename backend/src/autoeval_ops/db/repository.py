@@ -14,6 +14,7 @@ from autoeval_ops.db.models import (
     Evaluation,
     Organization,
     Project,
+    Trace,
     User,
 )
 
@@ -208,3 +209,20 @@ async def get_evaluation_detail(db: AsyncSession, eval_id: uuid.UUID) -> Evaluat
         .options(selectinload(Evaluation.results))
     )
     return result.scalar_one_or_none()
+
+async def create_trace(
+    db: AsyncSession,
+    eval_id: uuid.UUID,
+    trace_data: dict[str, Any],
+    latency_ms: int,
+    cost_usd: float,
+) -> Trace:
+    trace = Trace(
+        eval_id=eval_id,
+        trace_data=trace_data,
+        latency_ms=latency_ms,
+        cost_usd=cost_usd,
+    )
+    db.add(trace)
+    await db.flush()
+    return trace

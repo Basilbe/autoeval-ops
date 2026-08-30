@@ -3,5 +3,6 @@ import { clerkMiddleware } from "@clerk/nextjs/server";
 export default clerkMiddleware();
 
 export const config = {
-  matcher: ["/((?!_next|.*\\..*).*)", "/(api|trpc)(.*)"],
+  // /status is deliberately excluded - it's a public page, no auth.
+  matcher: ["/((?!_next|status|.*\\..*).*)", "/(api|trpc)(.*)"],
 };
