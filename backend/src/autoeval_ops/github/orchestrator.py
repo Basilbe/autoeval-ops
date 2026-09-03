@@ -95,7 +95,7 @@ def aggregate_reports(reports: list[EvaluationReport]) -> tuple[str, dict, list[
 async def handle_eval_job(
     job: EvalJob,
     app_auth: GitHubAppAuth,
-    model: str = "gpt-4",
+    model: str = "gemini-1.5-flash",
     client_factory=GitHubClient,
     session_factory=None,
 ) -> None:

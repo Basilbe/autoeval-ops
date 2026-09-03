@@ -3,6 +3,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import { api } from "@/lib/api";
+import { AddProjectForm } from "@/components/AddProjectForm";
 
 export default async function ProjectsPage() {
   const { userId, getToken } = await auth();
@@ -16,6 +17,8 @@ export default async function ProjectsPage() {
         <h1 className="text-lg font-medium tracking-tight">AutoEvalOps</h1>
         <UserButton />
       </div>
+
+      <AddProjectForm />
 
       {projects.length === 0 ? (
         <div className="rounded border border-ink-raised px-6 py-16 text-center text-bone-dim">

@@ -34,14 +34,27 @@ class Settings(BaseSettings):
     clerk_secret_key: str = ""
     clerk_jwks_url: str = ""
 
+    # Observability (Phase 5)
+    otel_enabled: bool = True
+    otel_exporter_endpoint: str = "http://localhost:4318"
+
+    @property
+    def async_database_url(self) -> str:
+        """Managed Postgres providers hand out postgresql:// URLs, which
+        route SQLAlchemy to the sync psycopg2 driver. This project uses
+        asyncpg. Normalizing here means the deployment platform's value
+        can be used verbatim without hand-editing."""
+        url = self.database_url
+        if url.startswith("postgresql://"):
+            return url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        if url.startswith("postgres://"):
+            return url.replace("postgres://", "postgresql+asyncpg://", 1)
+        return url
+
     model_config = SettingsConfigDict(
         env_file=str(_REPO_ROOT / ".env"),
         extra="ignore",
     )
-
-    # Observability (Phase 5)
-    otel_enabled: bool = True
-    otel_exporter_endpoint: str = "http://localhost:4318"
 
 
 settings = Settings()

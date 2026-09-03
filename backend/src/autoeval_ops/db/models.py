@@ -17,6 +17,7 @@ from sqlalchemy import (
     String,
     Text,
     func,
+    UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -66,7 +67,10 @@ class Organization(Base):
 
 class Project(Base):
     __tablename__ = "projects"
-    __table_args__ = (Index("idx_projects_org_id", "org_id"),)
+    __table_args__ = (
+        Index("idx_projects_org_id", "org_id"),
+        UniqueConstraint("github_repo_url", name="uq_projects_github_repo_url"),
+    )
 
     id: Mapped[uuid.UUID] = _uuid_pk()
     org_id: Mapped[uuid.UUID] = mapped_column(

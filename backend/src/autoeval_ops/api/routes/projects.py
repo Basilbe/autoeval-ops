@@ -23,6 +23,14 @@ async def create_project(
     org = await repository.get_organization(db, org_id)
     if org is None or org.user_id != user.id:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
+    
+    existing = await repository.get_project_by_repo_url(db, payload.github_repo_url)
+    if existing is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="That repository is already registered to a project.",
+        )
+
     return await repository.create_project(
         db, org_id=org_id, name=payload.name, github_repo_url=payload.github_repo_url
     )

@@ -1,3 +1,15 @@
+export interface Organization {
+  id: string;
+  name: string;
+  plan: string;
+  created_at: string;
+}
+
+export interface CreateProjectInput {
+  name: string;
+  github_repo_url: string;
+}
+
 export interface Project {
   id: string;
   org_id: string;
@@ -49,12 +61,41 @@ async function request<T>(path: string, token: string): Promise<T> {
   return res.json();
 }
 
+async function postRequest<T>(path: string, token: string, body: unknown): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    let detail = `${res.status}`;
+    try {
+      const parsed = await res.json();
+      if (parsed?.detail) detail = parsed.detail;
+    } catch {
+      // response wasn't JSON - fall back to the status code
+    }
+    throw new ApiError(res.status, detail);
+  }
+  return res.json();
+}
+
 export const api = {
   listProjects: (token: string) => request<Project[]>("/api/v1/projects", token),
   listEvaluations: (token: string, projectId: string) =>
     request<EvaluationSummary[]>(`/api/v1/projects/${projectId}/evals`, token),
   getEvaluation: (token: string, evalId: string) =>
     request<EvaluationDetail>(`/api/v1/evals/${evalId}`, token),
+  listOrganizations: (token: string) =>
+    request<Organization[]>("/api/v1/organizations", token),
+  createOrganization: (token: string, name: string) =>
+    postRequest<Organization>("/api/v1/organizations", token, { name }),
+  createProject: (token: string, orgId: string, input: CreateProjectInput) =>
+    postRequest<Project>(`/api/v1/projects?org_id=${orgId}`, token, input),
 };
 
 export { ApiError };

@@ -116,6 +116,15 @@ async def get_project_by_repo(db: AsyncSession, owner: str, repo: str) -> Projec
     return result.scalars().first()
 
 
+async def get_project_by_repo_url(db: AsyncSession, github_repo_url: str) -> Project | None:
+    """Duplicate check for project registration. Uses the same
+    normalization as get_project_by_repo so 'https://github.com/O/R' and
+    'o/r' are correctly treated as the same repository."""
+    normalized = normalize_repo(github_repo_url)
+    result = await db.execute(select(Project).where(Project.github_repo_url == normalized))
+    return result.scalars().first()
+
+
 async def list_projects_for_user(db: AsyncSession, user_id: uuid.UUID) -> list[Project]:
     result = await db.execute(
         select(Project)
