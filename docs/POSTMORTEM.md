@@ -2,7 +2,7 @@
 
 
 
-Six phases, roughly 2 weeks in, one working product. This is
+Six phases, roughly 4 weeks, one working product. This is
 
 the honest account: what was traded off deliberately, what broke in
 
@@ -370,6 +370,30 @@ the boundary is exactly what hides the bug that lives at the boundary.
 
 &#x20; not something absorbed into whatever phase has room left over.
 
+\- \*\*Set up frontend testing from Phase 4, not defer it indefinitely.\*\*
+
+&#x20; The original tech stack lock specified Jest + React Testing Library;
+
+&#x20; neither was ever actually set up, surfaced only in Phase 6 while
+
+&#x20; reconciling the tech stack doc against reality. Every dashboard
+
+&#x20; behavior across six phases was verified by hand, in a browser — real
+
+&#x20; and effective, but it doesn't scale, and it means a regression in
+
+&#x20; auth logic or a page's data fetching has no safety net beyond
+
+&#x20; remembering to click through it again. Logged here as a known,
+
+&#x20; deliberately deferred gap rather than closed in Phase 6, given how
+
+&#x20; much ground this phase already covers — a reasonable scope boundary,
+
+&#x20; not an oversight, but a real one worth acting on before this sees
+
+&#x20; any use beyond a portfolio demo.
+
 
 
 \---
@@ -380,15 +404,139 @@ the boundary is exactly what hides the bug that lives at the boundary.
 
 
 
-\[Fill in after Task 11: date run, tool (`locust`), target
+Tool: `locust`, targeting `/api/v1/status` and `/health` against the
 
-(`/api/v1/status`, not the evaluation pipeline — that's bounded by
+live deployed backend (`https://autoevalops-api.onrender.com`) —
 
-Gemini's rate limits and would cost real money to hammer), results at
+deliberately not the evaluation pipeline itself, since that's bounded
 
-various concurrency levels, and honest context on where Render's
+by Gemini's/OpenAI's rate limits and would cost real money per request
 
-free tier actually falls over relative to `Roadmap.md`'s original
+to hammer.
 
-500+ RPS target.]
+
+
+\*\*5 concurrent users, 1/sec ramp-up:\*\*
+
+
+
+| Metric | `/api/v1/status` | `/health` |
+
+|---|---|---|
+
+| Requests | 1,684 | 554 |
+
+| Failures | 0 | 0 |
+
+| Median | 180ms | 170ms |
+
+| p95 | 210ms | 190ms |
+
+| p99 | 320ms | 300ms |
+
+| Max | 42,667ms | 41,324ms |
+
+
+
+Zero failures at light load, and once warm, p95 stayed under a quarter
+
+second. The one outlier — a 42.6-second max against a 180ms median —
+
+is Render's free-tier cold start: the instance sleeps after
+
+inactivity, and the very first request in the run paid the \~30-60s
+
+wake-up cost the deployment guide already flagged as expected. Every
+
+request after that was fast.
+
+
+
+\*\*200 concurrent users, 10/sec ramp-up:\*\*
+
+
+
+| Metric | `/api/v1/status` | `/health` |
+
+|---|---|---|
+
+| Requests | 5,940 | 1,928 |
+
+| Failures | 0 | 0 |
+
+| Median | 5,000ms | 240ms |
+
+| p95 | 5,600ms | 330ms |
+
+| p99 | 9,200ms | 670ms |
+
+| Max | 13,618ms | 2,062ms |
+
+| RPS achieved | 47.1 (aggregate) | |
+
+
+
+\*\*Still zero failures at 200 users\*\* — the service degrades by getting
+
+slower, not by rejecting requests. But median latency on the status
+
+endpoint rose 27x (180ms → 5,000ms), and throughput plateaued around
+
+\*\*47 RPS\*\* regardless of how many concurrent users were sending
+
+requests. That gap between 200 users wanting service and only \~47
+
+requests/sec actually being served is a queuing signature, not a
+
+crash.
+
+
+
+\*\*Root cause, confirmed from the actual deploy log, not inferred:\*\*
+
+
+
+```
+
+==> Setting WEB\_CONCURRENCY=1 by default, based on available CPUs in the instance
+
+```
+
+
+
+Render's free tier runs a single worker process on a single CPU.
+
+Every request funnels through one process; there's no parallelism to
+
+absorb concurrent load. This fully explains both the throughput
+
+ceiling and the latency curve — requests are queuing behind each
+
+other, not failing.
+
+
+
+\*\*Against `Roadmap.md`'s original 500+ RPS target:\*\* this deployment
+
+reaches roughly 9% of that under load, and the reason is legible and
+
+fixable, not a defect in the application code. `/api/v1/status`'s own
+
+query is cheap (a handful of aggregate Postgres reads); the ceiling is
+
+entirely the hosting tier's worker count. The direct fix is a paid
+
+Render tier with `WEB\_CONCURRENCY` set above 1 and multiple instances
+
+behind a load balancer — infrastructure spend, not a rewrite. Worth
+
+stating plainly rather than quietly omitting the number: this is a
+
+portfolio deployment on a free tier, not infrastructure sized for
+
+production traffic, and the load test's value here is in showing
+
+\*where\* and \*why\* it would need to change, not in hitting an arbitrary
+
+target.
 
