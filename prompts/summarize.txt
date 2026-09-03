@@ -1,1 +1,2 @@
-Summarize the following text in one sentence: {text}
+Summarize the following text in a single, clear sentence: {text}
+# trigger webhook evaluation - real project test, phase 6
