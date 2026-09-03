@@ -75,7 +75,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
-        "https://your-dashboard.vercel.app",
+        "https://autoeval-ippa2iddm-basil24.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
