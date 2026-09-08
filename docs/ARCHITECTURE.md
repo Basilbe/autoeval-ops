@@ -1,4 +1,4 @@
-\# Architecture
+# Architecture
 
 
 
@@ -14,7 +14,7 @@ several of these choices away from the original plan.
 
 
 
-\## System diagram
+## System diagram
 
 
 
@@ -28,93 +28,93 @@ several of these choices away from the original plan.
 
 └─────────────┘                    │                            │
 
-&#x20;                                   │  ┌──────────────────────┐  │
+                                    │  ┌──────────────────────┐  │
 
-&#x20;     PR comment ◄──────────────── │  │ Webhook receiver      │  │
+      PR comment ◄──────────────── │  │ Webhook receiver      │  │
 
-&#x20;     posted back                  │  │  → HMAC verify        │  │
+      posted back                  │  │  → HMAC verify        │  │
 
-&#x20;                                   │  │  → enqueue job         │  │
+                                    │  │  → enqueue job         │  │
 
-&#x20;                                   │  └──────────┬───────────┘  │
+                                    │  └──────────┬───────────┘  │
 
-&#x20;                                   │             ▼               │
+                                    │             ▼               │
 
-&#x20;                                   │  ┌──────────────────────┐  │
+                                    │  ┌──────────────────────┐  │
 
-&#x20;                                   │  │ asyncio.Queue          │  │
+                                    │  │ asyncio.Queue          │  │
 
-&#x20;                                   │  │ (in-process, no        │  │
+                                    │  │ (in-process, no        │  │
 
-&#x20;                                   │  │  external broker)      │  │
+                                    │  │  external broker)      │  │
 
-&#x20;                                   │  └──────────┬───────────┘  │
+                                    │  └──────────┬───────────┘  │
 
-&#x20;                                   │             ▼               │
+                                    │             ▼               │
 
-&#x20;                                   │  ┌──────────────────────┐  │
+                                    │  ┌──────────────────────┐  │
 
-&#x20;                                   │  │ Orchestrator            │  │
+                                    │  │ Orchestrator            │  │
 
-&#x20;                                   │  │  → find changed prompts │  │
+                                    │  │  → find changed prompts │  │
 
-&#x20;                                   │  │  → run test cases        │  │
+                                    │  │  → run test cases        │  │
 
-&#x20;                                   │  │  → 5 evaluators (parallel)│ │
+                                    │  │  → 5 evaluators (parallel)│ │
 
-&#x20;                                   │  └──────────┬───────────┘  │
+                                    │  └──────────┬───────────┘  │
 
-&#x20;                                   │             ▼               │
+                                    │             ▼               │
 
-&#x20;                                   │  ┌──────────────────────┐  │
+                                    │  ┌──────────────────────┐  │
 
-&#x20;                                   │  │ Persistence (best-      │  │
+                                    │  │ Persistence (best-      │  │
 
-&#x20;                                   │  │  effort — never blocks  │  │
+                                    │  │  effort — never blocks  │  │
 
-&#x20;                                   │  │  the PR comment)         │  │
+                                    │  │  the PR comment)         │  │
 
-&#x20;                                   │  └──────────┬───────────┘  │
+                                    │  └──────────┬───────────┘  │
 
-&#x20;                                   └─────────────┼──────────────┘
+                                    └─────────────┼──────────────┘
 
-&#x20;                                                 ▼
+                                                  ▼
 
-&#x20;                                   ┌──────────────────────────┐
+                                    ┌──────────────────────────┐
 
-&#x20;                                   │   PostgreSQL (Render)      │
+                                    │   PostgreSQL (Render)      │
 
-&#x20;                                   │  users · orgs · projects   │
+                                    │  users · orgs · projects   │
 
-&#x20;                                   │  evaluations · eval\_results│
+                                    │  evaluations · eval_results│
 
-&#x20;                                   │  traces                    │
+                                    │  traces                    │
 
-&#x20;                                   └──────────────┬─────────────┘
+                                    └──────────────┬─────────────┘
 
-&#x20;                                                   ▲
+                                                    ▲
 
-&#x20;                                   ┌──────────────────────────┐
+                                    ┌──────────────────────────┐
 
-&#x20;                                   │   Next.js dashboard        │
+                                    │   Next.js dashboard        │
 
-&#x20;                                   │   (Vercel)                 │
+                                    │   (Vercel)                 │
 
-&#x20;                                   │  Clerk auth · REST calls   │
+                                    │  Clerk auth · REST calls   │
 
-&#x20;                                   │  to the FastAPI backend    │
+                                    │  to the FastAPI backend    │
 
-&#x20;                                   └──────────────────────────┘
+                                    └──────────────────────────┘
 
 ```
 
 
 
-\## Components
+## Components
 
 
 
-\### Evaluation engine (`core/`)
+### Evaluation engine (`core/`)
 
 
 
@@ -142,29 +142,29 @@ Nothing above this layer knows which one is active.
 
 
 
-\### GitHub integration (`github/`)
+### GitHub integration (`github/`)
 
 
 
-\- `app\_auth.py` — GitHub App JWT signing and installation token exchange
+- `app_auth.py` — GitHub App JWT signing and installation token exchange
 
-\- `webhook.py` — HMAC-SHA256 signature verification, filters to
+- `webhook.py` — HMAC-SHA256 signature verification, filters to
 
-&#x20; relevant PR events only
+  relevant PR events only
 
-\- `queue.py` — the `asyncio.Queue` worker pool; a job failure here
+- `queue.py` — the `asyncio.Queue` worker pool; a job failure here
 
-&#x20; doesn't take down the worker, it logs and continues
+  doesn't take down the worker, it logs and continues
 
-\- `orchestrator.py` — the actual per-PR flow: find changed prompt
+- `orchestrator.py` — the actual per-PR flow: find changed prompt
 
-&#x20; files, match each to its test cases, run the pipeline, format and
+  files, match each to its test cases, run the pipeline, format and
 
-&#x20; post the PR comment, persist results
+  post the PR comment, persist results
 
 
 
-\### Backend API (`api/`, `db/`)
+### Backend API (`api/`, `db/`)
 
 
 
@@ -192,7 +192,7 @@ directly.
 
 
 
-\### Observability (`observability/`)
+### Observability (`observability/`)
 
 
 
@@ -202,7 +202,7 @@ OpenTelemetry spans wrap the orchestrator and the evaluation pipeline
 
 each carrying its metric result as a span attribute. Exported via OTLP
 
-to Jaeger locally; disabled in production (`OTEL\_ENABLED=false`) since
+to Jaeger locally; disabled in production (`OTEL_ENABLED=false`) since
 
 no hosted trace backend is deployed yet.
 
@@ -216,7 +216,7 @@ so a server restart doesn't reset the numbers.
 
 
 
-\### Dashboard (`dashboard/`)
+### Dashboard (`dashboard/`)
 
 
 
@@ -236,7 +236,7 @@ reads inside each page.
 
 
 
-\## Data model
+## Data model
 
 
 
@@ -244,7 +244,7 @@ Six tables, all created in Phase 0 and evolved via Alembic migrations
 
 since Phase 3: `users`, `organizations`, `projects`, `evaluations`,
 
-`eval\_results`, `traces`. A project is uniquely identified by its
+`eval_results`, `traces`. A project is uniquely identified by its
 
 normalized GitHub repo URL — enforced at the database level, added in
 
@@ -254,39 +254,39 @@ same repo.
 
 
 
-\## Deliberate gaps
+## Deliberate gaps
 
 
 
-\- \*\*No hosted trace backend in production.\*\* Jaeger is local-only;
+- **No hosted trace backend in production.** Jaeger is local-only;
 
-&#x20; `OTEL\_ENABLED=false` in deployment. The code path is fully built and
+  `OTEL_ENABLED=false` in deployment. The code path is fully built and
 
-&#x20; guarded — adding a hosted backend (Tempo, Honeycomb) is a config
+  guarded — adding a hosted backend (Tempo, Honeycomb) is a config
 
-&#x20; change, not new code.
+  change, not new code.
 
-\- \*\*ClickHouse was never added.\*\* The `traces` table lived in Postgres
+- **ClickHouse was never added.** The `traces` table lived in Postgres
 
-&#x20; from Phase 0 and stayed there — a second analytics database was
+  from Phase 0 and stayed there — a second analytics database was
 
-&#x20; never justified by actual trace volume.
+  never justified by actual trace volume.
 
-\- \*\*Free-tier hosting, not built for scale.\*\* Render's free tier
+- **Free-tier hosting, not built for scale.** Render's free tier
 
-&#x20; sleeps after inactivity; this is a portfolio deployment, not a
+  sleeps after inactivity; this is a portfolio deployment, not a
 
-&#x20; production SLA. See `POSTMORTEM.md` for load test results and honest
+  production SLA. See `POSTMORTEM.md` for load test results and honest
 
-&#x20; context on what free-tier limits actually cap out at.
-
-
-
-\## Plan vs. reality
+  context on what free-tier limits actually cap out at.
 
 
 
-`docs/ARCHITECTURE\_ORIGINAL\_PLAN.md` is the Phase 0 design doc, written
+## Plan vs. reality
+
+
+
+`docs/ARCHITECTURE_ORIGINAL_PLAN.md` is the Phase 0 design doc, written
 
 before any code existed. Most of it held up. A few things it specified
 
@@ -296,49 +296,49 @@ dropping:
 
 
 
-\- \*\*GitHub token encryption (AES-256-GCM).\*\* The `projects` table has
+- **GitHub token encryption (AES-256-GCM).** The `projects` table has
 
-&#x20; a `github\_token\_encrypted` column, but nothing in `db/repository.py`
+  a `github_token_encrypted` column, but nothing in `db/repository.py`
 
-&#x20; ever encrypts a value before writing to it — confirmed absent by
+  ever encrypts a value before writing to it — confirmed absent by
 
-&#x20; direct search, not an oversight in this doc. In practice this hasn't
+  direct search, not an oversight in this doc. In practice this hasn't
 
-&#x20; mattered because the deployed system authenticates as a GitHub App
+  mattered because the deployed system authenticates as a GitHub App
 
-&#x20; (JWT + short-lived installation tokens), not long-lived per-user
+  (JWT + short-lived installation tokens), not long-lived per-user
 
-&#x20; PATs, so there's no plaintext token actually being stored today. But
+  PATs, so there's no plaintext token actually being stored today. But
 
-&#x20; the column and the original design intent exist for a future where
+  the column and the original design intent exist for a future where
 
-&#x20; that might change, and the encryption itself doesn't.
+  that might change, and the encryption itself doesn't.
 
-\- \*\*LLM API retry logic.\*\* The plan specified 2 retries on a failed
+- **LLM API retry logic.** The plan specified 2 retries on a failed
 
-&#x20; LLM call; `llm\_client.py` has none — a failure propagates immediately
+  LLM call; `llm_client.py` has none — a failure propagates immediately
 
-&#x20; rather than retrying. Real gap, not yet hit in practice because
+  rather than retrying. Real gap, not yet hit in practice because
 
-&#x20; Gemini's free tier has been reliable during development, but worth
+  Gemini's free tier has been reliable during development, but worth
 
-&#x20; fixing before this sees real traffic volume.
+  fixing before this sees real traffic volume.
 
-\- \*\*Redis + Celery\*\* were installed as a hedge in Phase 2 but never
+- **Redis + Celery** were installed as a hedge in Phase 2 but never
 
-&#x20; used — `asyncio.Queue` was the real, final choice for the task queue,
+  used — `asyncio.Queue` was the real, final choice for the task queue,
 
-&#x20; not a temporary MVP stand-in as the original plan framed it.
+  not a temporary MVP stand-in as the original plan framed it.
 
-\- \*\*WebSocket-based real-time updates (planned for "Phase 6")\*\* never
+- **WebSocket-based real-time updates (planned for "Phase 6")** never
 
-&#x20; happened — there is no Phase 7, and the dashboard uses plain
+  happened — there is no Phase 7, and the dashboard uses plain
 
-&#x20; server-rendered fetches with no live-update mechanism.
+  server-rendered fetches with no live-update mechanism.
 
-\- \*\*Datadog in production\*\* was never wired up; see "Deliberate gaps"
+- **Datadog in production** was never wired up; see "Deliberate gaps"
 
-&#x20; above.
+  above.
 
 
 
@@ -346,5 +346,5 @@ Full account of what broke during development, and why each of these
 
 decisions was made when it was, is in
 
-\[`POSTMORTEM.md`](POSTMORTEM.md).
+[`POSTMORTEM.md`](POSTMORTEM.md).
 

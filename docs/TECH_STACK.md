@@ -73,10 +73,11 @@
   serverless platforms can't provide. Render's free tier runs
   `WEB_CONCURRENCY=1` — see `docs/POSTMORTEM.md`'s load test section
   for what that caps throughput at.
-- **CI/CD:** GitHub Actions — **planned, not yet built.**
-  `.github/workflows/test.yml` doesn't exist yet; this is Phase 6's
-  remaining Task 14, still open as of this writing. Tests currently
-  only run manually, locally.
+- **CI/CD:** GitHub Actions, added in Phase 6 (`.github/workflows/test.yml`)
+  — runs the backend test suite against a Postgres service container on
+  every push and PR to `main`, confirmed passing. Backend only: the
+  frontend still has no automated tests (see Testing, below, and
+  `docs/POSTMORTEM.md`), so CI doesn't run anything for `dashboard/` yet.
 
 ## Testing
 - **Backend:** pytest + pytest-asyncio, unit and Postgres-backed
