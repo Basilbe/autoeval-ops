@@ -12,7 +12,14 @@ import truststore
 truststore.inject_into_ssl()
 
 from autoeval_ops.observability.telemetry import configure_tracing, instrument_app
+import sentry_sdk
 
+if settings.sentry_dsn:
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        traces_sample_rate=0.1,
+        environment=settings.environment,
+    )
 configure_tracing()
 
 from fastapi import FastAPI

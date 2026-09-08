@@ -14,6 +14,7 @@ def resolve_repo_path(path: str) -> Path:
     return p if p.is_absolute() else _REPO_ROOT / p
 
 class Settings(BaseSettings):
+    sentry_dsn: str = ""
     # Database
     database_url: str = "postgresql+asyncpg://autoeval_user:dev_password@localhost:5432/autoeval_dev"
 

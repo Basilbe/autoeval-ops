@@ -31,3 +31,4 @@ pytest-mock==3.12.0
 email-validator==2.1.0
 truststore==0.10.4
 google-generativeai
+sentry-sdk[fastapi]
