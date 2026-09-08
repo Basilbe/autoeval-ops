@@ -18,11 +18,11 @@ router = APIRouter(prefix="/api/v1", tags=["status"])
 
 _STARTED_AT = datetime.now(timezone.utc)
 
-
 @router.get("/status")
 async def public_status(db: AsyncSession = Depends(get_db)) -> dict:
     metrics = await collect_status_metrics(db)
     uptime_seconds = (datetime.now(timezone.utc) - _STARTED_AT).total_seconds()
+    raise RuntimeError("Sentry test - safe to ignore, reverting immediately")
     return {
         "service": "AutoEvalOps",
         "status": "operational",
