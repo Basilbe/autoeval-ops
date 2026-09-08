@@ -274,3 +274,69 @@ async def test_get_evaluation_by_id_returns_404_for_non_owner(client, db_session
 
     attempt = await client.get(f"/api/v1/evals/{evaluation.id}", headers=headers2)
     assert attempt.status_code == 404
+
+
+async def test_create_project_rejects_duplicate_repo_url(client):
+    resp = await client.post("/api/v1/users", json={"email": "dupe-repo@example.com"})
+    headers = {"X-API-Key": resp.json()["api_key"]}
+    org = (
+        await client.post("/api/v1/organizations", json={"name": "Org"}, headers=headers)
+    ).json()
+
+    first = await client.post(
+        f"/api/v1/projects?org_id={org['id']}",
+        json={"name": "First", "github_repo_url": "o/dupe"},
+        headers=headers,
+    )
+    assert first.status_code == 201
+
+    second = await client.post(
+        f"/api/v1/projects?org_id={org['id']}",
+        json={"name": "Second", "github_repo_url": "o/dupe"},
+        headers=headers,
+    )
+    assert second.status_code == 409
+
+
+async def test_duplicate_repo_check_normalizes_url_form(client):
+    resp = await client.post("/api/v1/users", json={"email": "dupe-normalize@example.com"})
+    headers = {"X-API-Key": resp.json()["api_key"]}
+    org = (
+        await client.post("/api/v1/organizations", json={"name": "Org"}, headers=headers)
+    ).json()
+
+    first = await client.post(
+        f"/api/v1/projects?org_id={org['id']}",
+        json={"name": "First", "github_repo_url": "https://github.com/owner/repo"},
+        headers=headers,
+    )
+    assert first.status_code == 201
+
+    second = await client.post(
+        f"/api/v1/projects?org_id={org['id']}",
+        json={"name": "Second", "github_repo_url": "owner/repo"},
+        headers=headers,
+    )
+    assert second.status_code == 409
+
+
+async def test_different_repos_can_both_be_registered(client):
+    resp = await client.post("/api/v1/users", json={"email": "distinct-repos@example.com"})
+    headers = {"X-API-Key": resp.json()["api_key"]}
+    org = (
+        await client.post("/api/v1/organizations", json={"name": "Org"}, headers=headers)
+    ).json()
+
+    first = await client.post(
+        f"/api/v1/projects?org_id={org['id']}",
+        json={"name": "First", "github_repo_url": "o/distinct-a"},
+        headers=headers,
+    )
+    assert first.status_code == 201
+
+    second = await client.post(
+        f"/api/v1/projects?org_id={org['id']}",
+        json={"name": "Second", "github_repo_url": "o/distinct-b"},
+        headers=headers,
+    )
+    assert second.status_code == 201
