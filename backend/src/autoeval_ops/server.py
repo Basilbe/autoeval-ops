@@ -1,8 +1,10 @@
 """FastAPI application: GitHub webhook receiver (Phase 2) + backend API
-(Phase 3). Expanded from Phase 2's minimal server, not replaced.
+(Phase 3) + observability (Phase 5) + error tracking (Phase 6). Expanded
+from Phase 2's minimal server, not replaced.
 """
 from __future__ import annotations
 from contextlib import asynccontextmanager
+
 import truststore
 
 # Local HTTPS-scanning antivirus/proxies (e.g. Avast/AVG Web Shield) inject
@@ -11,7 +13,8 @@ import truststore
 # fail cert verification unless ssl reads the OS store instead.
 truststore.inject_into_ssl()
 
-from autoeval_ops.observability.telemetry import configure_tracing, instrument_app
+from autoeval_ops.config import settings, resolve_repo_path
+
 import sentry_sdk
 
 if settings.sentry_dsn:
@@ -20,6 +23,9 @@ if settings.sentry_dsn:
         traces_sample_rate=0.1,
         environment=settings.environment,
     )
+
+from autoeval_ops.observability.telemetry import configure_tracing, instrument_app
+
 configure_tracing()
 
 from fastapi import FastAPI
@@ -38,7 +44,6 @@ from autoeval_ops.api.routes.projects import router as projects_router
 from autoeval_ops.api.routes.evaluations import router as evaluations_router
 from autoeval_ops.api.routes.status import router as status_router
 from autoeval_ops.db.session import dispose_engine
-from autoeval_ops.config import settings, resolve_repo_path
 
 limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
 
@@ -69,7 +74,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="AutoEvalOps",
     description="Automated LLM prompt evaluation on every pull request.",
-    version="0.3.0",
+    version="0.6.0",
     lifespan=lifespan,
 )
 
@@ -88,6 +93,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.get("/health")
 async def health() -> dict:
